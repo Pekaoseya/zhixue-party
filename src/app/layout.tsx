@@ -4,34 +4,34 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: '新应用 | 扣子编程',
-    template: '%s | 扣子编程',
+    default: '智慧党建学习平台 | AI驱动学习新体验',
+    template: '%s | 智慧党建学习平台',
   },
   description:
-    '扣子编程是一款一站式云端 Vibe Coding 开发平台。通过对话轻松构建智能体、工作流和网站，实现从创意到上线的无缝衔接。',
+    '通过AI智能分析，为您量身定制学习路径，让党建知识学习更加高效有趣。提供智能学习诊断、知识图谱可视化、AI学习助手等功能。',
   keywords: [
-    '扣子编程',
-    'Coze Code',
-    'Vibe Coding',
-    'AI 编程',
-    '智能体搭建',
-    '工作流搭建',
-    '网站搭建',
-    '网站部署',
-    '全栈开发',
-    'AI 工程师',
+    '智慧党建',
+    'AI学习',
+    '党建学习平台',
+    '思维导图',
+    '知识图谱',
+    '学习路径规划',
+    '党员教育',
+    '党务培训',
+    '二十大精神学习',
+    '党史学习',
   ],
-  authors: [{ name: 'Coze Code Team', url: 'https://code.coze.cn' }],
+  authors: [{ name: '智慧党建平台', url: process.env.COZE_PROJECT_DOMAIN_DEFAULT }],
   generator: 'Coze Code',
   // icons: {
   //   icon: '',
   // },
   openGraph: {
-    title: '扣子编程 | 你的 AI 工程师已就位',
+    title: '智慧党建学习平台 | AI驱动学习新体验',
     description:
-      '我正在使用扣子编程 Vibe Coding，让创意瞬间上线。告别拖拽，拥抱心流。',
-    url: 'https://code.coze.cn',
-    siteName: '扣子编程',
+      '通过AI智能分析，为您量身定制学习路径，让党建知识学习更加高效有趣。',
+    url: process.env.COZE_PROJECT_DOMAIN_DEFAULT,
+    siteName: '智慧党建学习平台',
     locale: 'zh_CN',
     type: 'website',
     // images: [
@@ -64,7 +64,7 @@ export default function RootLayout({
   const isDev = process.env.COZE_PROJECT_ENV === 'DEV';
 
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <body className={`antialiased`}>
         {isDev && <Inspector />}
         {children}
