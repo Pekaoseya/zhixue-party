@@ -131,7 +131,7 @@ export const partyKnowledgeGraph: KnowledgeNode = {
           }
         },
         {
-          id: 'comprehensive-从严治党',
+          id: 'comprehensive-从-严治党',
           name: '全面从严治党',
           level: 2,
           description: '新时代党的建设新的伟大工程',
@@ -338,45 +338,202 @@ export const diagnosticOptions: DiagnosticOption[] = [
   { id: 'topic-6', label: '基层治理创新', category: 'topic', tags: ['治理', '服务'] },
 ];
 
+// 根据节点ID获取节点对象
+function getNodeById(nodeId: string, node: KnowledgeNode): KnowledgeNode | null {
+  if (node.id === nodeId) return node;
+  if (node.children) {
+    for (const child of node.children) {
+      const found = getNodeById(nodeId, child);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// 递归筛选节点
+function filterNodes(node: KnowledgeNode, selectedIds: Set<string>, level: string): KnowledgeNode | null {
+  // 如果是叶子节点，检查是否在选中列表中
+  if (!node.children || node.children.length === 0) {
+    if (selectedIds.has(node.id)) {
+      return { ...node };
+    }
+    return null;
+  }
+  
+  // 递归处理子节点
+  const filteredChildren: KnowledgeNode[] = [];
+  for (const child of node.children) {
+    const filteredChild = filterNodes(child, selectedIds, level);
+    if (filteredChild) {
+      filteredChildren.push(filteredChild);
+    }
+  }
+  
+  // 根据难度筛选
+  if (level === 'beginner') {
+    // 入门级：只显示基础理论
+    const basicIds = ['party-constitution', 'party-history', 'party-theory', 'party-building-basics'];
+    const filteredBasicChildren = filteredChildren.filter(c => 
+      basicIds.includes(c.id) || (c.children && c.children.some(gc => basicIds.includes(gc.id)))
+    );
+    if (filteredBasicChildren.length > 0 || selectedIds.has(node.id)) {
+      return {
+        ...node,
+        children: filteredBasicChildren.length > 0 ? filteredBasicChildren : filteredChildren.slice(0, 2)
+      };
+    }
+  } else if (level === 'intermediate') {
+    // 进阶级：显示大部分内容
+    if (filteredChildren.length > 0 || selectedIds.has(node.id)) {
+      return {
+        ...node,
+        children: filteredChildren
+      };
+    }
+  } else {
+    // 深入级：显示全部内容
+    if (filteredChildren.length > 0 || selectedIds.has(node.id)) {
+      return {
+        ...node,
+        children: filteredChildren
+      };
+    }
+  }
+  
+  // 如果有选中的子节点，返回当前节点
+  if (filteredChildren.length > 0) {
+    return { ...node, children: filteredChildren };
+  }
+  
+  return null;
+}
+
 // 根据诊断生成学习路径
 export function generateLearningPath(profile: { roles: string[]; topics: string[]; level: string }): LearningPath {
-  const matchedNodes: string[] = [];
+  const selectedIds = new Set<string>();
   
-  // 基础必学
-  const requiredNodes = ['party-constitution', 'party-history'];
+  // 基础必学（根据难度决定是否包含）
+  if (profile.level !== 'beginner') {
+    selectedIds.add('party-constitution');
+  }
+  if (profile.level === 'beginner' || profile.level === 'intermediate') {
+    selectedIds.add('party-history');
+  }
   
-  // 根据角色添加
+  // 根据角色添加相关节点
   if (profile.roles.includes('基层党务工作者') || profile.roles.includes('党支部书记')) {
-    matchedNodes.push('membership-development', 'party-life', 'mass-work');
+    selectedIds.add('membership-development');
+    selectedIds.add('party-life');
+    selectedIds.add('mass-work');
   }
   if (profile.roles.includes('入党积极分子')) {
-    matchedNodes.push('party-constitution', 'party-history');
+    selectedIds.add('party-constitution');
+    selectedIds.add('party-history');
   }
   if (profile.roles.includes('青年党员')) {
-    matchedNodes.push('chinese-modernization', 'rural-revitalization');
+    selectedIds.add('chinese-modernization');
+    selectedIds.add('rural-revitalization');
+  }
+  if (profile.roles.includes('普通党员')) {
+    selectedIds.add('party-theory');
+    selectedIds.add('20th-report');
   }
   
-  // 根据主题添加
+  // 根据主题添加相关节点
   if (profile.topics.includes('二十大精神')) {
-    matchedNodes.push('20th-report', 'chinese-modernization');
+    selectedIds.add('20th-report');
+    selectedIds.add('chinese-modernization');
+    if (profile.level === 'advanced') {
+      selectedIds.add('comprehensive-从-严治党');
+    }
+  }
+  if (profile.topics.includes('党史学习教育')) {
+    selectedIds.add('party-history');
+    if (profile.level !== 'beginner') {
+      selectedIds.add('party-theory');
+    }
+  }
+  if (profile.topics.includes('发展党员流程')) {
+    selectedIds.add('membership-development');
+    if (profile.level === 'advanced') {
+      selectedIds.add('party-life');
+    }
   }
   if (profile.topics.includes('乡村振兴')) {
-    matchedNodes.push('rural-policy', 'rural-governance');
+    selectedIds.add('rural-policy');
+    selectedIds.add('rural-governance');
+    selectedIds.add('rural-revitalization');
   }
   if (profile.topics.includes('党风廉政建设')) {
-    matchedNodes.push('integrity-education', 'supervision-system');
+    selectedIds.add('integrity-education');
+    if (profile.level === 'advanced') {
+      selectedIds.add('supervision-system');
+    }
+  }
+  if (profile.topics.includes('基层治理创新')) {
+    selectedIds.add('rural-governance');
+    selectedIds.add('mass-work');
   }
   
-  // 构建路径
-  const uniqueNodes = [...new Set([...requiredNodes, ...matchedNodes])];
+  // 添加父节点（确保选中节点的路径完整）
+  const parentMap: Record<string, string> = {
+    'party-constitution': 'party-building-basics',
+    'party-history': 'party-building-basics',
+    'party-theory': 'party-building-basics',
+    '20th-report': 'party-20th-congress',
+    'chinese-modernization': 'party-20th-congress',
+    'comprehensive-从-严治党': 'party-20th-congress',
+    'membership-development': 'grassroots-party-work',
+    'party-life': 'grassroots-party-work',
+    'mass-work': 'grassroots-party-work',
+    'rural-policy': 'rural-revitalization',
+    'rural-governance': 'rural-revitalization',
+    'integrity-education': 'disciplinary-style',
+    'supervision-system': 'disciplinary-style',
+  };
+  
+  selectedIds.forEach(id => {
+    const parentId = parentMap[id];
+    if (parentId) {
+      selectedIds.add(parentId);
+    }
+  });
+  
+  // 筛选并构建学习路径
+  const filteredRoot = filterNodes(partyKnowledgeGraph, selectedIds, profile.level);
+  
+  // 计算总时长
+  let totalDuration = 0;
+  function calcDuration(node: KnowledgeNode) {
+    if (node.content?.duration) {
+      totalDuration += node.content.duration;
+    }
+    if (node.children) {
+      node.children.forEach(calcDuration);
+    }
+  }
+  if (filteredRoot) {
+    calcDuration(filteredRoot);
+  }
+  
+  // 难度标题映射
+  const difficultyLabels = {
+    beginner: '入门级',
+    intermediate: '进阶级',
+    advanced: '深入级'
+  };
+  
+  // 生成标题
+  const selectedRole = profile.roles[0] || '党员';
+  const selectedTopic = profile.topics[0] || '综合学习';
   
   return {
     id: `path-${Date.now()}`,
-    title: '您的专属学习计划',
-    description: '基于您的选择，为您规划了个性化学习路径',
-    rootNode: partyKnowledgeGraph,
-    totalDuration: uniqueNodes.length * 45,
-    difficulty: profile.level === 'beginner' ? 'beginner' : profile.level === 'intermediate' ? 'intermediate' : 'advanced'
+    title: `${selectedRole} · ${selectedTopic}`,
+    description: `基于您的选择，为您规划了「${difficultyLabels[profile.level as keyof typeof difficultyLabels]}」学习方案`,
+    rootNode: filteredRoot || partyKnowledgeGraph,
+    totalDuration: totalDuration || 120,
+    difficulty: profile.level as 'beginner' | 'intermediate' | 'advanced'
   };
 }
 
@@ -416,15 +573,5 @@ export function analyzeIntent(userInput: string): { keywords: string[]; matchedP
 
 // 获取节点详情
 export function getNodeDetails(nodeId: string): KnowledgeNode | null {
-  function search(node: KnowledgeNode): KnowledgeNode | null {
-    if (node.id === nodeId) return node;
-    if (node.children) {
-      for (const child of node.children) {
-        const found = search(child);
-        if (found) return found;
-      }
-    }
-    return null;
-  }
-  return search(partyKnowledgeGraph);
+  return getNodeById(nodeId, partyKnowledgeGraph);
 }

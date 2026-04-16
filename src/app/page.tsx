@@ -25,6 +25,7 @@ export default function LearningPathApp() {
   const [currentView, setCurrentView] = useState<'home' | 'diagnostic' | 'mindmap' | 'ai'>('home');
   const [generatedPath, setGeneratedPath] = useState<LearningPath | null>(null);
   const [highlightedNodes, setHighlightedNodes] = useState<string[]>([]);
+  const [hasCompletedDiagnostic, setHasCompletedDiagnostic] = useState(false);
   const [progress] = useState<LearningProgress[]>([
     { nodeId: 'party-constitution', status: 'completed', score: 95 },
     { nodeId: 'party-history', status: 'completed', score: 88 }
@@ -36,7 +37,16 @@ export default function LearningPathApp() {
     // 设置高亮节点
     const nodes = getAllNodeIds(path.rootNode);
     setHighlightedNodes(nodes);
+    setHasCompletedDiagnostic(true);
     setCurrentView('mindmap');
+  };
+
+  // 处理重新诊断
+  const handleResetDiagnostic = () => {
+    setHasCompletedDiagnostic(false);
+    setGeneratedPath(null);
+    setHighlightedNodes([]);
+    setCurrentView('diagnostic');
   };
 
   // 处理AI意图检测
@@ -161,9 +171,8 @@ export default function LearningPathApp() {
                     </Button>
                     <Button 
                       size="lg"
-                      variant="outline"
                       onClick={() => setCurrentView('mindmap')}
-                      className="border-white text-white hover:bg-white/10"
+                      className="bg-transparent border-2 border-white text-white hover:bg-white/20"
                     >
                       <Map className="w-5 h-5 mr-2" />
                       查看知识图谱
@@ -246,31 +255,78 @@ export default function LearningPathApp() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <Card 
-                    className="border-0 shadow-lg hover:shadow-xl transition-shadow cursor-pointer overflow-hidden group"
-                    onClick={() => setCurrentView('diagnostic')}
-                  >
-                    <div className="h-2 bg-gradient-to-r from-red-500 to-orange-500" />
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <GraduationCap className="w-8 h-8 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold mb-2">学习需求诊断</h3>
-                          <p className="text-slate-500 text-sm mb-4">
-                            通过简单的问卷，AI将分析您的学习需求，生成个性化学习路径
-                          </p>
-                          <div className="flex items-center text-red-600 text-sm font-medium">
-                            立即开始
-                            <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
+                  {hasCompletedDiagnostic ? (
+                    // 已完成诊断后的界面
+                    <Card className="border-0 shadow-lg overflow-hidden">
+                      <div className="h-2 bg-gradient-to-r from-green-500 to-emerald-500" />
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                            <Sparkles className="w-8 h-8 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-xl font-semibold mb-1">您的专属学习计划</h3>
+                            <p className="text-slate-500 text-sm">{generatedPath?.description}</p>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                        
+                        <div className="bg-slate-50 rounded-lg p-4 mb-4">
+                          <p className="text-sm text-slate-600 mb-2">
+                            <span className="font-medium">预计时长：</span>{generatedPath?.totalDuration} 分钟
+                          </p>
+                          <p className="text-sm text-slate-600">
+                            <span className="font-medium">难度等级：</span>
+                            {generatedPath?.difficulty === 'beginner' ? '入门级' : 
+                             generatedPath?.difficulty === 'intermediate' ? '进阶级' : '深入级'}
+                          </p>
+                        </div>
+                        
+                        <div className="flex gap-3">
+                          <Button 
+                            onClick={() => setCurrentView('mindmap')}
+                            className="flex-1 bg-green-600 hover:bg-green-700"
+                          >
+                            <Map className="w-4 h-4 mr-2" />
+                            继续学习
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={handleResetDiagnostic}
+                            className="flex-1"
+                          >
+                            重新诊断
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    // 未诊断时的界面
+                    <Card 
+                      className="border-0 shadow-lg hover:shadow-xl transition-shadow cursor-pointer overflow-hidden group"
+                      onClick={() => setCurrentView('diagnostic')}
+                    >
+                      <div className="h-2 bg-gradient-to-r from-red-500 to-orange-500" />
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <GraduationCap className="w-8 h-8 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-xl font-semibold mb-2">学习需求诊断</h3>
+                            <p className="text-slate-500 text-sm mb-4">
+                              通过简单的问卷，AI将分析您的学习需求，生成个性化学习路径
+                            </p>
+                            <div className="flex items-center text-red-600 text-sm font-medium">
+                              立即开始
+                              <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </motion.div>
 
                 <motion.div
